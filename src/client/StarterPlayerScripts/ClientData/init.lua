@@ -13,6 +13,7 @@ local Variable = require(script:WaitForChild("Variable"))
 local ACCESS_KEY = game:GetService("HttpService"):GenerateGUID() -- Used to access the Variable Object instead of the Value
 local getAllPlayerDataFn = Remotes.GetAllPlayerDataFn
 local updatePlayerDataEv = Remotes.UpdatePlayerDataEv
+
 ----- Public Variables -----
 
 local Player = game.Players.LocalPlayer
@@ -58,20 +59,43 @@ function ClientData:_GetVariableObject(variableName, defaultData)
 	end
 end
 
+
+--[[
+	Description:
+		Function called when a Variable's Value is being updated.
+		This will fire all callback functions specified for ClientData.
+	Parameters:
+		variableName(Required): name of the Variable who's Value is being updated
+		newData(Required): new value to set the Variable's Value to
+]]
 function ClientData:_Update(variableName, newData)
 	local var = self:_GetVariableObject(variableName, newData)
 
-	local oldVal = var.Value
-	var:_Update(newData)
-	local newVal = var.Value
+	local oldVal = var.Value -- Store the old value for use in the ClientData callbacks
+	var:_Update(newData) -- Updates the Variable, and fires its own callbacks
+	local newVal = var.Value -- Get the new value for use in the ClientData callbacks
 
 	for _,callback in pairs(self._callbacks) do
-		callback(variableName, oldVal, newVal)
+		callback(variableName, oldVal, newVal) -- Fire each callback function set up for ClientData
 	end
 end
 
 ----- Public Functions -----
 
+--[[
+	Description:
+		Function that adds a callback function to the specified Variable Object, or
+			the ClientData Object as a whole.
+		These functions are called when the Variable Object's _Update function is
+			called to change its data.
+	Parameters:
+		variableName(Required): the name of the variable you want to add a callback to
+		func(Required): the function to be added
+	WARNING:
+		If no variableName is specified, and the function is the first parameter
+			then you are specifying that you want to know any time that
+			ClientData is being updated for any reason.
+]]
 function ClientData:OnUpdate(variableName, func)
 	if type(variableName) == "function" then -- Check if want to encompas all Variables
 		table.insert(self._callbacks, variableName) -- Insert function into callbacks for the ClientData Object
@@ -148,11 +172,21 @@ local function initialize()
 
 
 	----- Connections -----
+	--[[
+		Description:
+			Connections is mainly used to listen to messages sent by the Server.
 
-	-- PLACE YOUR REMOTE EVENT CONNECTIONS HERE
+			As a default, we include an updatePlayerDataEv to check when the
+				Server wants to update/add _privateVariableList Variables.
 
+			I usually set them up as local variables in the Private Variables
+				section at the very top. But this is not neccessary, you can
+				just use 'Remotes.EventName.OnClientEvent' instead.
+	]]
+
+	-- Remote event fired when the Server is updating/adding a _privateVariableList Variable
 	updatePlayerDataEv.OnClientEvent:Connect(function(variableName, newData)
-		if _privateVariableList[variableName] == nil then
+		if _privateVariableList[variableName] == nil then -- Check if it doesn't exist and create a new Variable Object
 			_privateVariableList[variableName] = self:_CreateVariable(newData, "_privateVariableList" .. variableName .. "")
 		end
 		self:_Update(variableName, newData)
@@ -181,7 +215,7 @@ local function initialize()
 			end
 		elseif _privateVariableList[index] ~= nil then -- Check if trying to access private Variable Value
 			return _privateVariableList[index].Value
-		elseif _publicVariableList[index] ~= nil then
+		elseif _publicVariableList[index] ~= nil then -- Check if trying to access public Variable Value
 			return _publicVariableList[index].Value
 		end
 	end})
