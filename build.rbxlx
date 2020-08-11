@@ -1,0 +1,523 @@
+<roblox version="4">
+  <Item class="HttpService" referent="0">
+    <Properties>
+      <string name="Name">HttpService</string>
+      <bool name="HttpEnabled">true</bool>
+    </Properties>
+  </Item>
+  <Item class="Lighting" referent="1">
+    <Properties>
+      <string name="Name">Lighting</string>
+      <Color3 name="Ambient">
+        <R>0</R>
+        <G>0</G>
+        <B>0</B>
+      </Color3>
+      <float name="Brightness">2</float>
+      <bool name="GlobalShadows">true</bool>
+      <bool name="Outlines">false</bool>
+      <token name="Technology">1</token>
+    </Properties>
+  </Item>
+  <Item class="ReplicatedFirst" referent="2">
+    <Properties>
+      <string name="Name">ReplicatedFirst</string>
+    </Properties>
+    <Item class="ModuleScript" referent="3">
+      <Properties>
+        <string name="Name">GLOBALS</string>
+        <string name="Source">local G = {}
+
+for _,property in pairs(script:GetChildren()) do
+	G[property.Name] = property.Value
+end
+
+return G</string>
+      </Properties>
+      <Item class="BoolValue" referent="4">
+        <Properties>
+          <string name="Name">DEBUG</string>
+        </Properties>
+      </Item>
+      <Item class="StringValue" referent="5">
+        <Properties>
+          <string name="Name">GAMETITLE</string>
+        </Properties>
+      </Item>
+      <Item class="StringValue" referent="6">
+        <Properties>
+          <string name="Name">PLACENAME</string>
+        </Properties>
+      </Item>
+      <Item class="StringValue" referent="7">
+        <Properties>
+          <string name="Name">VERSION</string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ReplicatedStorage" referent="8">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="ModuleScript" referent="9">
+      <Properties>
+        <string name="Name">HelperFns</string>
+        <string name="Source">local HelperFns = {}
+
+wait()
+for _,func in pairs(script:GetChildren()) do
+	HelperFns[func.Name] = require(func)
+end
+
+return HelperFns</string>
+      </Properties>
+    </Item>
+    <Item class="ModuleScript" referent="10">
+      <Properties>
+        <string name="Name">Remotes</string>
+        <string name="Source">local Remotes = {}
+
+wait()
+for _,remote in pairs(script:GetChildren()) do
+	Remotes[remote.Name] = remote
+end
+
+return Remotes</string>
+      </Properties>
+      <Item class="RemoteEvent" referent="11">
+        <Properties>
+          <string name="Name">TestEv</string>
+        </Properties>
+      </Item>
+      <Item class="RemoteFunction" referent="12">
+        <Properties>
+          <string name="Name">TestFn</string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService" referent="13">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Script" referent="14">
+      <Properties>
+        <string name="Name">Main</string>
+        <string name="Source">local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
+
+print(("%s - v%s"):format(G.GAMETITLE, G.VERSION))
+print(("Debug is %s."):format((G.DEBUG and "enabled" or "disabled")))
+
+--Setup the PRNG.
+math.randomseed(tick()) -- Must be called only one time per program.
+math.random() -- Flush the first couple results to fix a known C/Lua bug.
+math.random()
+math.random()
+
+
+-- The only things that should be run from Main are modules that are not loaded anywhere else.
+-- These modules run their own init when loaded with "require"
+local CoreLogic = require(script:WaitForChild("CoreLogic"))</string>
+      </Properties>
+      <Item class="ModuleScript" referent="15">
+        <Properties>
+          <string name="Name">CoreLogic</string>
+          <string name="Source">local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
+
+local onPlayerAdded = require(script:WaitForChild("OnPlayerAdded"))
+local onPlayerRemoving = require(script:WaitForChild("OnPlayerRemoving"))
+
+local CoreLogic = {}
+
+CoreLogic.__index = CoreLogic
+setmetatable(CoreLogic, {
+	__call = function(cls, ...)
+		return cls.new(...)
+	end
+})
+
+
+function CoreLogic.new()
+	local self = setmetatable({}, CoreLogic)
+	
+	game.Players.PlayerAdded:Connect(onPlayerAdded)
+	game.Players.PlayerRemoving:Connect(onPlayerRemoving)
+	
+	-- Run the onPlayerAdded for any players who joined before the event handler was attached.
+	for _,plr in pairs(game.Players:GetPlayers()) do
+		onPlayerAdded(plr)
+	end
+	
+	return self
+end
+
+-- NOTE: We are creating a single instance and returning it .
+-- There must only be one instance of this module, ever.
+local m = CoreLogic.new()
+return m</string>
+        </Properties>
+        <Item class="ModuleScript" referent="16">
+          <Properties>
+            <string name="Name">OnCharacterAdded</string>
+            <string name="Source">local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
+
+local newOnPlayerDied = require(script.Parent:WaitForChild("OnPlayerDied"))
+
+local function newOnCharacterAddedFn(plr)
+	local function onCharacterAdded(chr)
+		
+		-- Find the humanoid, and detect when it dies
+		local hum = chr:WaitForChild("Humanoid")
+		if hum then
+			hum.Died:Connect(newOnPlayerDied(plr))
+		end
+	end
+	
+	return onCharacterAdded
+end
+
+return newOnCharacterAddedFn</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="17">
+          <Properties>
+            <string name="Name">OnPlayerAdded</string>
+            <string name="Source">local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
+
+local newOnCharacterAddedFn = require(script.Parent:WaitForChild("OnCharacterAdded"))
+
+local function onPlayerAdded(plr)
+	local onCharacterAdded = newOnCharacterAddedFn(plr)
+	plr.CharacterAdded:Connect(onCharacterAdded)
+	
+	plr:LoadCharacter()
+end
+
+return onPlayerAdded</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="18">
+          <Properties>
+            <string name="Name">OnPlayerRemoving</string>
+            <string name="Source">local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
+
+local function onPlayerRemoving(plr)
+	
+end
+
+return onPlayerRemoving</string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="19">
+          <Properties>
+            <string name="Name">onPlayerDied</string>
+            <string name="Source">local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
+
+local function newOnPlayerDied(plr)
+	local function onPlayerDied()
+		--Custom respawn functionality
+
+
+		
+		wait(5)
+		plr:LoadCharacter()
+	end
+	
+	return onPlayerDied
+end
+
+return newOnPlayerDied</string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerStorage" referent="20">
+    <Properties>
+      <string name="Name">ServerStorage</string>
+    </Properties>
+    <Item class="ModuleScript" referent="21">
+      <Properties>
+        <string name="Name">MasterData</string>
+        <string name="Source"></string>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="SoundService" referent="22">
+    <Properties>
+      <string name="Name">SoundService</string>
+      <bool name="RespectFilteringEnabled">true</bool>
+    </Properties>
+  </Item>
+  <Item class="StarterPlayer" referent="23">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterCharacterScripts" referent="24">
+      <Properties>
+        <string name="Name">StarterCharacterScripts</string>
+      </Properties>
+    </Item>
+    <Item class="StarterPlayerScripts" referent="25">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="ModuleScript" referent="26">
+        <Properties>
+          <string name="Name">ClientData</string>
+          <string name="Source">----- GLOBALS -----
+
+local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
+
+----- Loaded Modules -----
+
+local Remotes = require(game.ReplicatedStorage:WaitForChild("Remotes"))
+local HelperFns = require(game.ReplicatedStorage:WaitForChild("HelperFns"))
+local Variable = require(script:WaitForChild("Variable"))
+
+----- Private Variables -----
+
+local ACCESS_KEY = game:GetService("HttpService"):GenerateGUID() -- Used to access the Variable Object instead of the Value
+local getAllPlayerDataFn = Remotes.GetAllPlayerDataFn
+local updatePlayerDataEv = Remotes.UpdatePlayerDataEv
+----- Public Variables -----
+
+local Player = game.Players.LocalPlayer
+
+local ClientData = {}
+ClientData.__index = ClientData
+
+----- Private Functions -----
+
+--[[ 
+	Description: 
+    	Function that returns a new Variable Object.
+	Parameters:
+    	defualtData(Optional): Default data used to set up the Variable Object with
+		_debug(Optional): Used to debug where the creation is coming from
+	Returns:
+		Variable Object
+]]
+function ClientData:_CreateVariable(defaultData, _debug)
+	if _debug then
+		print("Variable created: " .. _debug)
+	end
+	return Variable.new(defaultData)
+end
+
+
+--[[
+	Description:
+		Function that checks if the ClientData Object has the specified
+			Variable Object in _privateVariableList or _publicVariableList
+			and returns it.
+		If not, will create a new Variable Object and return it.
+	Parameters:
+		variableName(Required): Name of the Variable used to locate Variable Object
+		defaultData(Optional): Default data used to set up the Variable Object. Used only by ClientData:_Update() for now
+]]
+function ClientData:_GetVariableObject(variableName, defaultData)
+	if self[ACCESS_KEY .. variableName] ~= nil then
+		return self[ACCESS_KEY .. variableName]
+	else
+		self[variableName] = self:_CreateVariable(defaultData, "_GetVariableObject")
+		return self[ACCESS_KEY .. variableName]
+	end
+end
+
+function ClientData:_Update(variableName, newData)
+	local var = self:_GetVariableObject(variableName, newData)
+
+	local oldVal = var.Value
+	var:_Update(newData)
+	local newVal = var.Value
+
+	for _,callback in pairs(self._callbacks) do
+		callback(variableName, oldVal, newVal)
+	end
+end
+
+----- Public Functions -----
+
+function ClientData:OnUpdate(variableName, func)
+	if type(variableName) == "function" then -- Check if want to encompas all Variables
+		table.insert(self._callbacks, variableName) -- Insert function into callbacks for the ClientData Object
+	else
+		local var = self:_GetVariableObject(variableName)
+		if var ~= nil then
+			var:OnUpdate(func)
+		end
+	end
+end
+
+----- Initialize -----
+
+local function initialize()
+	local self = {}
+
+	----- Private Variables -----
+	--[[
+		Description:
+			A table used to store data the server will be manipulating
+
+			(Read-Only) for the Client
+			
+			Server is the only entity with access to change data here
+			See MasterData:GetDefaultData() for more information
+	]]
+	local _privateVariableList = {
+	--[[
+		WARNING!!!
+		DO NOT PUT ANYTHING HERE!!!
+		THIS IS JUST AN EXAMPLE OF HOW IT WILL LOOK!!
+
+		Coins = self:_CreateVariable(_allData.Coins),
+		Items = self:_CreateVariable(_allData.Items),
+	]]
+	}
+	-- Setup all data that will be stored in _privateVariableList
+	for dataName, data in pairs(getAllPlayerDataFn:InvokeServer()) do
+		_privateVariableList[dataName] = self:_CreateVariable(data, "_allData " .. dataName) -- Remove 2nd parameter if you don't want to debug
+	end
+
+
+	--[[
+		Description:
+			Similar to _privateVariableList, except this data is created and accessed
+				by the Client only
+
+			(Read-Write) for the Client
+
+			Doesn't need to be set up right away, but in some cases having the index 
+				at startup is needed
+	]]
+	local _publicVariableList = {
+	--[[
+		WARNING!!!
+			Make sure the keys are different from _privateVariableList keys!!
+			Check MasterData:GetDefaultData() for more information
+
+		You can put whatever you want here at any
+			time during the Client's session.
+
+		Example Data:
+		UIOpen = self:_CreateVariable({}),
+		KillStreak = self:_CreateVariable({})
+	]]
+	}
+
+
+	-- Table of callback functions fired when the ClientData table is updated
+	self._callbacks = {}
+
+	----- Public Variables -----
+
+
+
+	----- Connections -----
+
+	-- PLACE YOUR REMOTE EVENT CONNECTIONS HERE
+
+	updatePlayerDataEv.OnClientEvent:Connect(function(variableName, newData)
+		if _privateVariableList[variableName] == nil then
+			_privateVariableList[variableName] = self:_CreateVariable(newData, "_privateVariableList " .. variableName)
+		end
+		self:_Update(variableName, newData)
+	end)
+
+	----- Metamethods -----
+
+	--[[
+		Description:
+			When 'self' is indexed by anything, it first checks to see if
+				the index is part of the ClientData table.
+
+			This is useful so that you can call ClientData functions while
+				still giving functionality to Variables inside the
+				_privateVariableList and _publicVariableList by not having
+				them be actual keys under 'self'. 
+	]]
+	self.__index = setmetatable(ClientData, {__index = function(tbl, index) -- First checks if ClientData has the index otherwise, fires this function
+		if string.match(index, ACCESS_KEY) then -- Check if trying to access the Variable Object
+			index = string.gsub(index, ACCESS_KEY, "")
+
+			if _privateVariableList[index] ~= nil then
+				return _privateVariableList[index]
+			elseif _publicVariableList[index] ~= nil then
+				return _publicVariableList[index]
+			end
+		elseif _privateVariableList[index] ~= nil then -- Check if trying to access private Variable Value
+			return _privateVariableList[index].Value
+		elseif _publicVariableList[index] ~= nil then
+			return _publicVariableList[index].Value
+		end
+	end})
+
+	--[[
+		Description:
+			When attempting to setup or change a Variable's Value, this function will be called.
+			
+			It will attempt to locate the Variable within _privateVariableList or _publicVariableList,
+				and based on which, will either warn that the client doesn't have access to change
+				a Variable under the _privateVariableList table, or will change or create a new Variable Object
+				and store it under the _publicVariableList.
+	]]
+	self.__newindex = function(tbl, index, newValue)
+		if _privateVariableList[index] ~= nil then -- Check if the index is under the _privateVariableList
+			warn("Attempting to change a Read-Only variable within ClientData!")
+		elseif _publicVariableList[index] ~= nil then
+			self:_Update(index, newValue)
+		else
+			_publicVariableList[index] = self:_CreateVariable(newValue, "_publicVariableList " .. index) -- Creates a new public Variable
+		end
+	end
+
+	return setmetatable(self, self)
+end
+
+local m = initialize()
+return m</string>
+        </Properties>
+        <Item class="ModuleScript" referent="27">
+          <Properties>
+            <string name="Name">Variable</string>
+            <string name="Source"></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="LocalScript" referent="28">
+        <Properties>
+          <string name="Name">ClientMain</string>
+          <string name="Source">local ClientData = require(script.Parent:WaitForChild("ClientData"))
+
+print(ClientData.t)</string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="Workspace" referent="29">
+    <Properties>
+      <string name="Name">Workspace</string>
+      <bool name="FilteringEnabled">true</bool>
+    </Properties>
+    <Item class="Part" referent="30">
+      <Properties>
+        <string name="Name">Baseplate</string>
+        <bool name="Anchored">true</bool>
+        <Color3uint8 name="Color3uint8">6446690</Color3uint8>
+        <bool name="Locked">true</bool>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>-10</Y>
+          <Z>0</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>512</X>
+          <Y>20</Y>
+          <Z>512</Z>
+        </Vector3>
+      </Properties>
+    </Item>
+  </Item>
+</roblox>
