@@ -114,7 +114,7 @@ end
 		ProfileService functionality that doesn't have to do with 'profile.Data' should
 			should be handled here.
 
-		You still have access to it 
+		You will still have access to the entire Profile in DataModules functions.
 ]]
 
 
