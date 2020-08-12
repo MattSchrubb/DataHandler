@@ -10,7 +10,7 @@ local Variable = require(script:WaitForChild("Variable"))
 
 ----- Private Variables -----
 
-local ACCESS_KEY = game:GetService("HttpService"):GenerateGUID() -- Used to access the Variable Object instead of the Value
+local ACCESS_KEY = "SomeRandomKeyUsedForObjectAccess" -- Used to access the Variable Object instead of the Value
 local getAllPlayerDataFn = Remotes.GetAllPlayerDataFn
 local updatePlayerDataEv = Remotes.UpdatePlayerDataEv
 
@@ -32,8 +32,8 @@ ClientData.__index = ClientData
 	Returns:
 		Variable Object
 ]]
-function ClientData:_CreateVariable(defaultData, _debug)
-	if _debug then
+local function _CreateVariable(defaultData, _debug)
+	if _debug and G.DEBUG then
 		print("Variable created: " .. _debug)
 	end
 	return Variable.new(defaultData)
@@ -54,7 +54,7 @@ function ClientData:_GetVariableObject(variableName, defaultData)
 	if self[ACCESS_KEY .. variableName] ~= nil then
 		return self[ACCESS_KEY .. variableName]
 	else
-		self[variableName] = self:_CreateVariable(defaultData, "_GetVariableObject")
+		self[variableName] = _CreateVariable(defaultData, "_GetVariableObject " .. variableName)
 		return self[ACCESS_KEY .. variableName]
 	end
 end
@@ -128,14 +128,14 @@ local function initialize()
 		DO NOT PUT ANYTHING HERE!!!
 		THIS IS JUST AN EXAMPLE OF HOW IT WILL LOOK!!
 
-		Coins = self:_CreateVariable(_allData.Coins),
-		Items = self:_CreateVariable(_allData.Items),
+		Coins = _CreateVariable(_allData.Coins),
+		Items = _CreateVariable(_allData.Items),
 	]]
 	}
 	-- Setup all data that will be stored in _privateVariableList
-	--for dataName, data in pairs(getAllPlayerDataFn:InvokeServer()) do
-	--	_privateVariableList[dataName] = self:_CreateVariable(data, "_allData " .. dataName) -- Remove 2nd parameter if you don't want to debug
-	--end
+	for dataName, data in pairs(getAllPlayerDataFn:InvokeServer()) do
+		_privateVariableList[dataName] = _CreateVariable(data, "getAllPlayerData " .. dataName) -- Remove 2nd parameter if you don't want to debug
+	end
 
 
 	--[[
@@ -158,8 +158,8 @@ local function initialize()
 			time during the Client's session.
 
 		Example Data:
-		UIOpen = self:_CreateVariable({}),
-		KillStreak = self:_CreateVariable({})
+		UIOpen = _CreateVariable({}),
+		KillStreak = _CreateVariable({})
 	]]
 	}
 
@@ -187,7 +187,7 @@ local function initialize()
 	-- Remote event fired when the Server is updating/adding a _privateVariableList Variable
 	updatePlayerDataEv.OnClientEvent:Connect(function(variableName, newData)
 		if _privateVariableList[variableName] == nil then -- Check if it doesn't exist and create a new Variable Object
-			_privateVariableList[variableName] = self:_CreateVariable(newData, "_privateVariableList" .. variableName .. "")
+			_privateVariableList[variableName] = _CreateVariable(newData, "_privateVariableList" .. variableName .. "")
 		end
 		self:_Update(variableName, newData)
 	end)
@@ -206,6 +206,7 @@ local function initialize()
 	]]
 	self.__index = setmetatable(ClientData, {__index = function(tbl, index) -- First checks if ClientData has the index otherwise, fires this function
 		if string.match(index, ACCESS_KEY) then -- Check if trying to access the Variable Object
+			
 			index = string.gsub(index, ACCESS_KEY, "")
 
 			if _privateVariableList[index] ~= nil then
@@ -235,7 +236,7 @@ local function initialize()
 		elseif _publicVariableList[index] ~= nil then
 			self:_Update(index, newValue)
 		else
-			_publicVariableList[index] = self:_CreateVariable(newValue, "_publicVariableList " .. index) -- Creates a new public Variable
+			_publicVariableList[index] = _CreateVariable(newValue, "_publicVariableList " .. index) -- Creates a new public Variable
 		end
 	end
 

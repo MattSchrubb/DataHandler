@@ -1,4 +1,6 @@
 {
 	"className": "BoolValue",
-	"Value": true
+	"properties": {
+		"Value": true
+	}
 }

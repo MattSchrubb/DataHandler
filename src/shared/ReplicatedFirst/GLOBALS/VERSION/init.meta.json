@@ -1,4 +1,6 @@
 {
 	"className": "StringValue",
-	"Value": "0.0.1"
+	"properties": {
+		"Value": "0.0.1"
+	}
 }

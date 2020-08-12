@@ -1,3 +1,7 @@
+--[[
+	This is a test setup for handling ClientData
+]]
+
 local ClientData = require(script.Parent:WaitForChild("ClientData"))
 
 print(ClientData.TestVariable)
