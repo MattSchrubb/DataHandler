@@ -58,7 +58,8 @@ end
 			equal to otherData.
 ]]
 function Template:TemplateFunc(plr, profile, otherData)
-	if profile.Data.Template == otherData then
+	local data = profile.Data
+	if data.Template == otherData then
 		print(plr)
 	end
 end
@@ -67,8 +68,16 @@ end
 	Function to add a value to the player's Template value and update it
 ]]
 function Template:AddToTemplate(plr, profile, amt)
-	profile.Data.Template = profile.Data.Template + amt
-	_Update(plr, profile.Data.Template)
+	local data = profile.Data
+	data.Template = data.Template + amt
+	_Update(plr, data.Template)
+end
+
+--[[
+	Function that generates a random number between startVal and endVal
+]]
+function Template:GenerateNewNumber(min, max)
+	return math.random(min, max)
 end
 
 ----- Initiate -----

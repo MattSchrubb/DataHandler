@@ -38,23 +38,34 @@ local DataVersion = "0.0.1"
 local Profiles = {} -- [player] = profile
 
 
+--[[
+	Description:
+		Sets up a metatable that when indexed, will first search through
+		itself to find the index being referenced, otherwise it will search 
+		through all DataModules until it finds the first matching index.
+]]
 local MasterData = setmetatable({}, {__index = function(tbl, index)
 	print(index)
 
 	local func
 	for _,v in pairs(DataModules) do
 		if v[index] then
-			func = v[index]
-			break
+			if type(v[index]) ~= "function" then -- Checks if the index is not a function
+				return v[index]
+			else
+				func = v[index] -- Setup the function to be returned
+				break
+			end
 		end
 	end
 
-	return function(_, plr, ...)
-		local profile = Profiles[plr]
-
-		print(plr, profile)
-
-		func(_, plr, profile, ...)
+	return function(_, plr, ...) -- Returns a function that calls func with plr, profile, ...
+		if typeof(plr) == "Instance" and plr:IsA("Player") then -- Check if a Player is being passed to get the Profile
+			local profile = Profiles[plr]
+			func(_, plr, profile, ...)
+		else
+			func(_, plr, ...)
+		end
 	end
 end})
 
@@ -98,6 +109,15 @@ local function CheckIfProfileNeedsUpdate(profile)
 end
 
 ----- Public Functions -----
+--[[
+	WARNING:
+		ProfileService functionality that doesn't have to do with 'profile.Data' should
+			should be handled here.
+
+		You still have access to it 
+]]
+
+
 
 --[[
 	Description:
@@ -122,7 +142,12 @@ end
 		Table of default data
 ]]
 function MasterData:GetDefaultData()
-	local defaultData = {}
+	local defaultData = {
+		--[[
+			Place here any data you want saved that wont be set up
+				through the DataModules.
+		]]
+	}
 
 	for _,mod in pairs(DataModules) do -- Search through each DataModule
 		if mod["_GetDefaultData"] then

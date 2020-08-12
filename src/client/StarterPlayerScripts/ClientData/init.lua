@@ -157,6 +157,8 @@ local function initialize()
 		You can put whatever you want here at any
 			time during the Client's session.
 
+		These will never be saved and are usefull only for this session.
+
 		Example Data:
 		UIOpen = _CreateVariable({}),
 		KillStreak = _CreateVariable({})

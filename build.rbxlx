@@ -596,11 +596,7 @@ local function initialize()
 	]]
 	}
 	-- Setup all data that will be stored in _privateVariableList
-	local _allData = nil
-	while not _allData do
-		_allData = getAllPlayerDataFn:InvokeServer()
-	end
-	for dataName, data in pairs(_allData) do
+	for dataName, data in pairs(getAllPlayerDataFn:InvokeServer()) do
 		_privateVariableList[dataName] = _CreateVariable(data, "getAllPlayerData " .. dataName) -- Remove 2nd parameter if you don't want to debug
 	end
 
@@ -623,6 +619,8 @@ local function initialize()
 
 		You can put whatever you want here at any
 			time during the Client's session.
+
+		These will never be saved and are usefull only for this session.
 
 		Example Data:
 		UIOpen = _CreateVariable({}),
@@ -1041,7 +1039,8 @@ local function newOnPlayerDied(plr)
 	return onPlayerDied
 end
 
-return newOnPlayerDied]]></ProtectedString>
+return newOnPlayerDied
+]]></ProtectedString>
 						<BinaryString name="Tags"></BinaryString>
 					</Properties>
 				</Item>
@@ -1118,23 +1117,34 @@ local DataVersion = "0.0.1"
 local Profiles = {} -- [player] = profile
 
 
+--[[
+	Description:
+		Sets up a metatable that when indexed, will first search through
+		itself to find the index being referenced, otherwise it will search 
+		through all DataModules until it finds the first matching index.
+]]
 local MasterData = setmetatable({}, {__index = function(tbl, index)
 	print(index)
 
 	local func
 	for _,v in pairs(DataModules) do
 		if v[index] then
-			func = v[index]
-			break
+			if type(v[index]) ~= "function" then -- Checks if the index is not a function
+				return v[index]
+			else
+				func = v[index] -- Setup the function to be returned
+				break
+			end
 		end
 	end
 
-	return function(_, plr, ...)
-		local profile = Profiles[plr]
-
-		print(plr, profile)
-
-		func(_, plr, profile, ...)
+	return function(_, plr, ...) -- Returns a function that calls func with plr, profile, ...
+		if typeof(plr) == "Instance" and plr:IsA("Player") then -- Check if a Player is being passed to get the Profile
+			local profile = Profiles[plr]
+			func(_, plr, profile, ...)
+		else
+			func(_, plr, ...)
+		end
 	end
 end})
 
@@ -1178,6 +1188,15 @@ local function CheckIfProfileNeedsUpdate(profile)
 end
 
 ----- Public Functions -----
+--[[
+	WARNING:
+		ProfileService functionality that doesn't have to do with 'profile.Data' should
+			should be handled here.
+
+		You still have access to it 
+]]
+
+
 
 --[[
 	Description:
@@ -1202,7 +1221,12 @@ end
 		Table of default data
 ]]
 function MasterData:GetDefaultData()
-	local defaultData = {}
+	local defaultData = {
+		--[[
+			Place here any data you want saved that wont be set up
+				through the DataModules.
+		]]
+	}
 
 	for _,mod in pairs(DataModules) do -- Search through each DataModule
 		if mod["_GetDefaultData"] then
@@ -1369,7 +1393,8 @@ end
 			equal to otherData.
 ]]
 function Template:TemplateFunc(plr, profile, otherData)
-	if profile.Data.Template == otherData then
+	local data = profile.Data
+	if data.Template == otherData then
 		print(plr)
 	end
 end
@@ -1378,8 +1403,16 @@ end
 	Function to add a value to the player's Template value and update it
 ]]
 function Template:AddToTemplate(plr, profile, amt)
-	profile.Data.Template = profile.Data.Template + amt
-	_Update(plr, profile.Data.Template)
+	local data = profile.Data
+	data.Template = data.Template + amt
+	_Update(plr, data.Template)
+end
+
+--[[
+	Function that generates a random number between startVal and endVal
+]]
+function Template:GenerateNewNumber(min, max)
+	return math.random(min, max)
 end
 
 ----- Initiate -----
