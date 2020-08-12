@@ -321,12 +321,12 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 			<string name="Name">ReplicatedFirst</string>
 			<BinaryString name="Tags"></BinaryString>
 		</Properties>
-		<Item class="ModuleScript" referent="3">
+		<Item class="ModuleScript" referent="RBX3076E280FAE44357B6EB681901CF8D2D">
 			<Properties>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<Content name="LinkedSource"><null></null></Content>
 				<string name="Name">GLOBALS</string>
-				<string name="ScriptGuid">{6A5512CC-C942-450C-8AF3-7498C604B0E2}</string>
+				<string name="ScriptGuid">{5E3047E6-D38A-48CD-9AF6-23A4588F7863}</string>
 				<ProtectedString name="Source"><![CDATA[local G = {}
 
 for _,property in pairs(script:GetChildren()) do
@@ -336,15 +336,15 @@ end
 return G]]></ProtectedString>
 				<BinaryString name="Tags"></BinaryString>
 			</Properties>
-			<Item class="BoolValue" referent="4">
+			<Item class="BoolValue" referent="RBX5B3B0628904741979AFF501C8191FBA6">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<string name="Name">DEBUG</string>
 					<BinaryString name="Tags"></BinaryString>
-					<bool name="Value">false</bool>
+					<bool name="Value">true</bool>
 				</Properties>
 			</Item>
-			<Item class="StringValue" referent="5">
+			<Item class="StringValue" referent="RBXCFE168A6944048E5AE53E154DCD206D4">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<string name="Name">GAMETITLE</string>
@@ -352,7 +352,7 @@ return G]]></ProtectedString>
 					<string name="Value"></string>
 				</Properties>
 			</Item>
-			<Item class="StringValue" referent="6">
+			<Item class="StringValue" referent="RBXDEDF0D1F369446FD83026CBA2D554FEC">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<string name="Name">PLACENAME</string>
@@ -360,12 +360,12 @@ return G]]></ProtectedString>
 					<string name="Value"></string>
 				</Properties>
 			</Item>
-			<Item class="StringValue" referent="7">
+			<Item class="StringValue" referent="RBXFDA914501D31442F8CCCBE9B22F8EB3C">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<string name="Name">VERSION</string>
 					<BinaryString name="Tags"></BinaryString>
-					<string name="Value"></string>
+					<string name="Value">0.0.1</string>
 				</Properties>
 			</Item>
 		</Item>
@@ -473,7 +473,7 @@ local Variable = require(script:WaitForChild("Variable"))
 
 ----- Private Variables -----
 
-local ACCESS_KEY = game:GetService("HttpService"):GenerateGUID() -- Used to access the Variable Object instead of the Value
+local ACCESS_KEY = "SomeRandomKeyUsedForObjectAccess" -- Used to access the Variable Object instead of the Value
 local getAllPlayerDataFn = Remotes.GetAllPlayerDataFn
 local updatePlayerDataEv = Remotes.UpdatePlayerDataEv
 
@@ -495,8 +495,8 @@ ClientData.__index = ClientData
 	Returns:
 		Variable Object
 ]]
-function ClientData:_CreateVariable(defaultData, _debug)
-	if _debug then
+local function _CreateVariable(defaultData, _debug)
+	if _debug and G.DEBUG then
 		print("Variable created: " .. _debug)
 	end
 	return Variable.new(defaultData)
@@ -517,7 +517,7 @@ function ClientData:_GetVariableObject(variableName, defaultData)
 	if self[ACCESS_KEY .. variableName] ~= nil then
 		return self[ACCESS_KEY .. variableName]
 	else
-		self[variableName] = self:_CreateVariable(defaultData, "_GetVariableObject")
+		self[variableName] = _CreateVariable(defaultData, "_GetVariableObject " .. variableName)
 		return self[ACCESS_KEY .. variableName]
 	end
 end
@@ -591,13 +591,17 @@ local function initialize()
 		DO NOT PUT ANYTHING HERE!!!
 		THIS IS JUST AN EXAMPLE OF HOW IT WILL LOOK!!
 
-		Coins = self:_CreateVariable(_allData.Coins),
-		Items = self:_CreateVariable(_allData.Items),
+		Coins = _CreateVariable(_allData.Coins),
+		Items = _CreateVariable(_allData.Items),
 	]]
 	}
 	-- Setup all data that will be stored in _privateVariableList
-	for dataName, data in pairs(getAllPlayerDataFn:InvokeServer()) do
-		_privateVariableList[dataName] = self:_CreateVariable(data, "getAllPlayerData " .. dataName) -- Remove 2nd parameter if you don't want to debug
+	local _allData = nil
+	while not _allData do
+		_allData = getAllPlayerDataFn:InvokeServer()
+	end
+	for dataName, data in pairs(_allData) do
+		_privateVariableList[dataName] = _CreateVariable(data, "getAllPlayerData " .. dataName) -- Remove 2nd parameter if you don't want to debug
 	end
 
 
@@ -621,8 +625,8 @@ local function initialize()
 			time during the Client's session.
 
 		Example Data:
-		UIOpen = self:_CreateVariable({}),
-		KillStreak = self:_CreateVariable({})
+		UIOpen = _CreateVariable({}),
+		KillStreak = _CreateVariable({})
 	]]
 	}
 
@@ -650,7 +654,7 @@ local function initialize()
 	-- Remote event fired when the Server is updating/adding a _privateVariableList Variable
 	updatePlayerDataEv.OnClientEvent:Connect(function(variableName, newData)
 		if _privateVariableList[variableName] == nil then -- Check if it doesn't exist and create a new Variable Object
-			_privateVariableList[variableName] = self:_CreateVariable(newData, "_privateVariableList" .. variableName .. "")
+			_privateVariableList[variableName] = _CreateVariable(newData, "_privateVariableList" .. variableName .. "")
 		end
 		self:_Update(variableName, newData)
 	end)
@@ -669,6 +673,7 @@ local function initialize()
 	]]
 	self.__index = setmetatable(ClientData, {__index = function(tbl, index) -- First checks if ClientData has the index otherwise, fires this function
 		if string.match(index, ACCESS_KEY) then -- Check if trying to access the Variable Object
+			
 			index = string.gsub(index, ACCESS_KEY, "")
 
 			if _privateVariableList[index] ~= nil then
@@ -698,7 +703,7 @@ local function initialize()
 		elseif _publicVariableList[index] ~= nil then
 			self:_Update(index, newValue)
 		else
-			_publicVariableList[index] = self:_CreateVariable(newValue, "_publicVariableList " .. index) -- Creates a new public Variable
+			_publicVariableList[index] = _CreateVariable(newValue, "_publicVariableList " .. index) -- Creates a new public Variable
 		end
 	end
 
@@ -753,7 +758,11 @@ return Variable]]></ProtectedString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">ClientMain</string>
 					<string name="ScriptGuid">{FCC7A3E6-31D4-4D9A-BA81-8C68DB87A64F}</string>
-					<ProtectedString name="Source"><![CDATA[local ClientData = require(script.Parent:WaitForChild("ClientData"))
+					<ProtectedString name="Source"><![CDATA[--[[
+	This is a test setup for handling ClientData
+]]
+
+local ClientData = require(script.Parent:WaitForChild("ClientData"))
 
 print(ClientData.TestVariable)
 ClientData.TestVariable = 5
@@ -901,7 +910,7 @@ print(ClientData.TestVariable)]]></ProtectedString>
 				<bool name="Disabled">false</bool>
 				<Content name="LinkedSource"><null></null></Content>
 				<string name="Name">Main</string>
-				<string name="ScriptGuid"></string>
+				<string name="ScriptGuid">{26DEDBE3-7410-4DB1-9D4B-A8A729112F08}</string>
 				<ProtectedString name="Source"><![CDATA[local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 print(("%s - v%s"):format(G.GAMETITLE, G.VERSION))
@@ -924,7 +933,7 @@ local CoreLogic = require(script:WaitForChild("CoreLogic"))]]></ProtectedString>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">CoreLogic</string>
-					<string name="ScriptGuid"></string>
+					<string name="ScriptGuid">{B67C5D8F-F1D1-41CF-BB3F-4E83B6AE05EA}</string>
 					<ProtectedString name="Source"><![CDATA[local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 local onPlayerAdded = require(script:WaitForChild("OnPlayerAdded"))
@@ -965,7 +974,7 @@ return m]]></ProtectedString>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<Content name="LinkedSource"><null></null></Content>
 						<string name="Name">OnCharacterAdded</string>
-						<string name="ScriptGuid"></string>
+						<string name="ScriptGuid">{97B3DEBF-AE61-4B62-BCE5-7AB17FCB881E}</string>
 						<ProtectedString name="Source"><![CDATA[local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 local newOnPlayerDied = require(script.Parent:WaitForChild("OnPlayerDied"))
@@ -992,7 +1001,7 @@ return newOnCharacterAddedFn]]></ProtectedString>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<Content name="LinkedSource"><null></null></Content>
 						<string name="Name">OnPlayerAdded</string>
-						<string name="ScriptGuid"></string>
+						<string name="ScriptGuid">{CC9F679F-1CE3-4D7A-9E31-DEB04039CF76}</string>
 						<ProtectedString name="Source"><![CDATA[local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 local MasterData = require(game.ServerStorage:WaitForChild("MasterData"))
@@ -1016,7 +1025,7 @@ return onPlayerAdded]]></ProtectedString>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<Content name="LinkedSource"><null></null></Content>
 						<string name="Name">OnPlayerDied</string>
-						<string name="ScriptGuid"></string>
+						<string name="ScriptGuid">{A5203399-31DD-4691-9C3F-C05D1868F080}</string>
 						<ProtectedString name="Source"><![CDATA[local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 local function newOnPlayerDied(plr)
@@ -1041,7 +1050,7 @@ return newOnPlayerDied]]></ProtectedString>
 						<BinaryString name="AttributesSerialize"></BinaryString>
 						<Content name="LinkedSource"><null></null></Content>
 						<string name="Name">OnPlayerRemoving</string>
-						<string name="ScriptGuid"></string>
+						<string name="ScriptGuid">{352CD621-B388-4956-B387-91750A46E767}</string>
 						<ProtectedString name="Source"><![CDATA[local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 local MasterData = require(game.ServerStorage:WaitForChild("MasterData"))
@@ -1110,6 +1119,8 @@ local Profiles = {} -- [player] = profile
 
 
 local MasterData = setmetatable({}, {__index = function(tbl, index)
+	print(index)
+
 	local func
 	for _,v in pairs(DataModules) do
 		if v[index] then
@@ -1118,10 +1129,12 @@ local MasterData = setmetatable({}, {__index = function(tbl, index)
 		end
 	end
 
-	return function(plr, ...)
+	return function(_, plr, ...)
 		local profile = Profiles[plr]
 
-		func(plr, profile, ...)
+		print(plr, profile)
+
+		func(_, plr, profile, ...)
 	end
 end})
 
@@ -1134,6 +1147,11 @@ local Players = game:GetService("Players")
 
 ----- Private Functions -----
 
+--[[
+	Description:
+		Function that compares the profile with DataVersion and updates it accordingly
+			if the profile is outdated
+]]
 local function CheckIfProfileNeedsUpdate(profile)
 	if not profile:GetMetaTag("DataVersion") then
 		-- First time setting up profile
@@ -1161,6 +1179,12 @@ end
 
 ----- Public Functions -----
 
+--[[
+	Description:
+		Function that gets the player's profile and returns its Data table.
+	Returns:
+		Table of player's profile data
+]]
 function MasterData:GetProfileData(plr)
 	local profile = Profiles[plr]
 
@@ -1169,16 +1193,24 @@ function MasterData:GetProfileData(plr)
 	end
 end
 
+--[[
+	Description:
+		Function that returns a table with default data from all DataModule modules.
+		Each module should have an _GetDefaultData function if it will be used to
+			as a data type reference.
+	Returns:
+		Table of default data
+]]
 function MasterData:GetDefaultData()
 	local defaultData = {}
 
-	for _,mod in pairs(DataModules) do
+	for _,mod in pairs(DataModules) do -- Search through each DataModule
 		if mod["_GetDefaultData"] then
-			local dataName,default = mod:_GetDefaultData()
+			local dataName,default = mod:_GetDefaultData() -- Get the name of the data and its default value
 
-			if type(dataName) == "table" and not default then
-				for _dataName,_default in pairs(dataName) do
-					defaultData[_dataName] = _default
+			if type(dataName) == "table" and not default then -- If the name is a table
+				for _dataName,_default in pairs(dataName) do -- Loop through the table for all name,default pairs
+					defaultData[_dataName] = _default -- This is for data types with multiple variables associated with it
 				end
 			else
 				defaultData[dataName] = default
@@ -1189,6 +1221,11 @@ function MasterData:GetDefaultData()
 	return defaultData
 end
 
+--[[
+	Description:
+		Function called when a player is added to the game.
+		This function handles the setup of the players Profile.
+]]
 function MasterData:OnPlayerAdded(plr)
 	local profile = PlayerProfileStore:LoadProfileAsync(
 		"Player_" .. plr.UserId,
@@ -1196,34 +1233,53 @@ function MasterData:OnPlayerAdded(plr)
 	)
 
 	if profile ~= nil then
-		profile:LisenToRelease(function()
+		profile:ListenToRelease(function() -- Setup a Release listener for when the player's Profile is released
 			Profiles[plr] = nil
 
-			plr:Kick()
+			plr:Kick() -- Kick the player to prevent any data loss
 		end)
 
-		if plr:IsDescendantOf(Players) == true then
+		if plr:IsDescendantOf(Players) == true then -- Check if the player is a descendant of Players
 			Profiles[plr] = profile
 
-			CheckIfProfileNeedsUpdate(profile)
+			CheckIfProfileNeedsUpdate(profile) -- Check if the player's profile needs to be updated
 		else
-			profile:Release()
+			profile:Release() -- If the player left, release it's profile
 		end
 	else
 		plr:Kick()
 	end
 end
 
+--[[
+	Description:
+		Function called when a player is being removed from the game
+]]
 function MasterData:OnPlayerRemoving(plr)
 	local profile = Profiles[plr]
 
-	if profile ~= nil then
-		profile:Release()
+	if profile ~= nil then -- If the player's profile exists in this server
+		profile:Release() -- Release it
 	end
 end
 
 ----- Connections -----
+--[[
+	Description:
+		Connections are used to recieve messages from the client and do something with it.
 
+		I typically denote RemoteFunctions with an Fn at the end, and
+			RemoteEvents with an Ev at the end so I know what I'm
+			working with.
+]]
+
+
+--[[
+	Description:
+		Event Fired when the player is asking for All of its data.
+	Returns:
+		Table of player's Profile data
+]]
 Remotes.GetAllPlayerDataFn.OnServerInvoke = function(plr)
 	local profile = Profiles[plr]
 
@@ -1234,6 +1290,10 @@ end
 
 ----- Initialize -----
 
+--[[
+	We initialize this here so MasterData can get all setup before calling
+	MasterData:GetDefaultData()
+]] 
 ProfileTemplate = MasterData:GetDefaultData()
 PlayerProfileStore = ProfileService.GetProfileStore(
 	"PlayerData",
@@ -1248,7 +1308,7 @@ return MasterData]]></ProtectedString>
 					<BinaryString name="AttributesSerialize"></BinaryString>
 					<Content name="LinkedSource"><null></null></Content>
 					<string name="Name">Template</string>
-					<string name="ScriptGuid"></string>
+					<string name="ScriptGuid">{8DD922F1-89B7-41CC-AFE9-4BB10EE86DFA}</string>
 					<ProtectedString name="Source"><![CDATA[--[[
 	This module is meant as a template for any data you are wanting to store and change in the server.
 ]]
@@ -1276,7 +1336,7 @@ Template.__index = Template
 function Template:_GetDefaultData()
 	local dataName = "Template"
 
-	local defaultData = {} 
+	local defaultData = 5 
 	--[[
 		OR if there are multiple parts to this data structure then
 
@@ -1292,6 +1352,15 @@ function Template:_GetDefaultData()
 	return dataName, defaultData
 end
 
+--[[
+	Description:
+		Function called when the data of a player's profile is changed.
+		Fires the UpdatePlayerEv function with the data name, and newData value
+]]
+local function _Update(plr, newData)
+	Remotes.UpdatePlayerDataEv:FireClient(plr, "Template", newData)
+end
+
 ----- Public Functions -----
 
 --[[
@@ -1299,10 +1368,18 @@ end
 		Function that checks if the given profile's Template data is
 			equal to otherData.
 ]]
-function Template:TemplateFunc(player, profile, otherData)
+function Template:TemplateFunc(plr, profile, otherData)
 	if profile.Data.Template == otherData then
-		print(player)
+		print(plr)
 	end
+end
+
+--[[
+	Function to add a value to the player's Template value and update it
+]]
+function Template:AddToTemplate(plr, profile, amt)
+	profile.Data.Template = profile.Data.Template + amt
+	_Update(plr, profile.Data.Template)
 end
 
 ----- Initiate -----
@@ -1317,7 +1394,7 @@ return Template]]></ProtectedString>
 				<BinaryString name="AttributesSerialize"></BinaryString>
 				<Content name="LinkedSource"><null></null></Content>
 				<string name="Name">ProfileService</string>
-				<string name="ScriptGuid"></string>
+				<string name="ScriptGuid">{E6FAD17D-A0DD-406D-BC33-0B42856EC059}</string>
 				<ProtectedString name="Source"><![CDATA[--[[[ProfileService]---------------------------------------
 	(STANDALONE VERSION)
 	DataStore profiles - universal session-locked savable table API
