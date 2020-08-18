@@ -151,14 +151,8 @@ function MasterData:GetDefaultData()
 
 	for _,mod in pairs(DataModules) do -- Search through each DataModule
 		if mod["_GetDefaultData"] then
-			local dataName,default = mod:_GetDefaultData() -- Get the name of the data and its default value
-
-			if type(dataName) == "table" and not default then -- If the name is a table
-				for _dataName,_default in pairs(dataName) do -- Loop through the table for all name,default pairs
-					defaultData[_dataName] = _default -- This is for data types with multiple variables associated with it
-				end
-			else
-				defaultData[dataName] = default
+			for _dataName, _data in pairs(mod:_GetDefaultData()) do -- Loop through the table for all name,default pairs
+				defaultData[_dataName] = _data
 			end
 		end
 	end
