@@ -23,22 +23,21 @@ Template.__index = Template
 		Function that returns the name and default data for this data type
 ]]
 function Template:_GetDefaultData()
-	local dataName = "Template"
 
-	local defaultData = 5 
+	local defaultData = {
+		["Template Data Item 1"] = 5
+	}
+
 	--[[
 		OR if there are multiple parts to this data structure then
 
-		local dataName = {"Template Data Item 1", "Template Data Item 2"}
-
-		local defaultData = {}
-		defaultData["Template Data Item 1"] = "Temp1"
-		defaultData["Template Data Item 2"] = "Temp2"
-
-		Make sure your Keys are the same!!!
+		local defaultData = {
+			["Template Data Item 1"] = "Temp1"
+			["Template Data Item 2"] = "Temp2"
+		}
 	]]
 
-	return dataName, defaultData
+	return defaultData
 end
 
 --[[
