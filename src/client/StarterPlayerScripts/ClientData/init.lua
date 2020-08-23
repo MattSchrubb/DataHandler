@@ -187,11 +187,11 @@ local function initialize()
 	]]
 
 	-- Remote event fired when the Server is updating/adding a _privateVariableList Variable
-	updatePlayerDataEv.OnClientEvent:Connect(function(variableName, newData)
+	updatePlayerDataEv.OnClientEvent:Connect(function(dataName, newData)
 		if _privateVariableList[variableName] == nil then -- Check if it doesn't exist and create a new Variable Object
-			_privateVariableList[variableName] = _CreateVariable(newData, "_privateVariableList" .. variableName .. "")
+			_privateVariableList[dataName] = _CreateVariable(newData, "_privateVariableList" .. dataName .. "")
 		end
-		self:_Update(variableName, newData)
+		self:_Update(dataName, newData)
 	end)
 
 	----- Metamethods -----
