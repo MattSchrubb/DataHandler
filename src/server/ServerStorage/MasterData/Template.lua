@@ -9,7 +9,18 @@ local HelperFns = require(game.ReplicatedStorage:WaitForChild("HelperFns"))
 
 ----- Private Variables -----
 
+local defaultData = {
+	["Template"] = 5
+}
 
+--[[
+	OR if there are multiple parts to this data structure then
+
+	local defaultData = {
+		["Template Data Item 1"] = "Temp1"
+		["Template Data Item 2"] = "Temp2"
+	}
+]]
 
 ----- Public Variables -----
 
@@ -23,20 +34,6 @@ Template.__index = Template
 		Function that returns the name and default data for this data type
 ]]
 function Template:_GetDefaultData()
-
-	local defaultData = {
-		["Template Data Item 1"] = 5
-	}
-
-	--[[
-		OR if there are multiple parts to this data structure then
-
-		local defaultData = {
-			["Template Data Item 1"] = "Temp1"
-			["Template Data Item 2"] = "Temp2"
-		}
-	]]
-
 	return defaultData
 end
 
@@ -45,8 +42,8 @@ end
 		Function called when the data of a player's profile is changed.
 		Fires the UpdatePlayerEv function with the data name, and newData value
 ]]
-local function _Update(plr, newData)
-	Remotes.UpdatePlayerDataEv:FireClient(plr, "Template", newData)
+local function _Update(plr, dataName, newData)
+	Remotes.UpdatePlayerDataEv:FireClient(plr, dataName, newData)
 end
 
 ----- Public Functions -----
@@ -69,7 +66,7 @@ end
 function Template:AddToTemplate(plr, profile, amt)
 	local data = profile.Data
 	data.Template = data.Template + amt
-	_Update(plr, data.Template)
+	_Update(plr, "Template", data.Template)
 end
 
 --[[
