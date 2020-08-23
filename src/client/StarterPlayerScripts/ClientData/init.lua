@@ -68,15 +68,15 @@ end
 		variableName(Required): name of the Variable who's Value is being updated
 		newData(Required): new value to set the Variable's Value to
 ]]
-function ClientData:_Update(variableName, newData)
-	local var = self:_GetVariableObject(variableName, newData)
+function ClientData:_Update(dataName, newData)
+	local var = self:_GetVariableObject(dataName, newData)
 
 	local oldVal = var.Value -- Store the old value for use in the ClientData callbacks
 	var:_Update(newData) -- Updates the Variable, and fires its own callbacks
 	local newVal = var.Value -- Get the new value for use in the ClientData callbacks
 
 	for _,callback in pairs(self._callbacks) do
-		callback(variableName, oldVal, newVal) -- Fire each callback function set up for ClientData
+		callback(dataName, oldVal, newVal) -- Fire each callback function set up for ClientData
 	end
 end
 
