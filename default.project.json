@@ -5,7 +5,12 @@
 
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
-      "$path": "src/shared/ReplicatedStorage"
+      "$path": "src/shared/ReplicatedStorage",
+
+      "rodux":{
+        "$className": "ModuleScript",
+        "$path": "rodux/src"
+      }
     },
 
     "ReplicatedFirst":{
