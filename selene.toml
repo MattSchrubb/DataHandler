@@ -2,5 +2,10 @@ std = "roblox"
 
 [rules]
 multiple_statements = "allow"
+if_same_then_else = "allow"
 unused_variable = "allow"
 global_usage = "allow"
+
+[config]
+empty_if = { comments_count = true }
+shadowing = { ignore_pattern = "^_|profile_store"}
