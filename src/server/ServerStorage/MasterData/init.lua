@@ -4,19 +4,16 @@ local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 ----- Loaded Modules -----
 
-local ProfileService = require(game.ServerStorage:WaitForChild("ProfileService"))
-local Remotes = require(game.ReplicatedStorage:WaitForChild("Remotes"))
-local HelperFns = require(game.ReplicatedStorage:WaitForChild("HelperFns"))
-
+local ProfileService = require(script:WaitForChild("ProfileService"))
+local Remotes = game.ReplicatedStorage:WaitForChild("RemoteMessages")
+local HelperFns = game.ReplicatedStorage:WaitForChild("HelperFns")
 
 --[[
 	DATA MODULES:
 		These are used to add functionality to your data. It also helps
 			from cluttering up this script.
-
 		There is a provided Template module that shows how to set up
 			and use your own custom data types.
-
 		WARNING:
 			Make sure that you don't have multiple of the same public
 			functions throughout all your DataModules.
@@ -25,15 +22,20 @@ local HelperFns = require(game.ReplicatedStorage:WaitForChild("HelperFns"))
 ]]
 local DataModules = {}
 for _,mod in pairs(script:GetChildren()) do
-	DataModules[mod.Name] = require(mod) -- Itterate through every child module and add it to the list
+	if mod.Name ~= "ProfileService" then
+		DataModules[mod.Name] = require(mod) -- Itterate through every child module and add it to the list
+	end
 end
 
 ----- Private Variables -----
 
 local ProfileTemplate
+local ProfileMockTemplate
 local PlayerProfileStore
+local PlayerMockProfileStore
 
-local DataVersion = "0.0.1"
+local DataVersion = "0.0.1" 
+--print("DATA VERSION: " .. DataVersion)
 
 local Profiles = {} -- [player] = profile
 
@@ -45,8 +47,8 @@ local Profiles = {} -- [player] = profile
 		through all DataModules until it finds the first matching index.
 ]]
 local MasterData = setmetatable({}, {__index = function(tbl, index)
-	print(index)
-
+	--print(index)
+	
 	local func
 	for _,v in pairs(DataModules) do
 		if v[index] then
@@ -58,13 +60,13 @@ local MasterData = setmetatable({}, {__index = function(tbl, index)
 			end
 		end
 	end
-
+	
 	return function(_, plr, ...) -- Returns a function that calls func with plr, profile, ...
 		if typeof(plr) == "Instance" and plr:IsA("Player") then -- Check if a Player is being passed to get the Profile
 			local profile = Profiles[plr]
-			func(_, plr, profile, ...)
+			return func(_, plr, profile, ...)
 		else
-			func(_, plr, ...)
+			return func(_, plr, ...) -- plr is 
 		end
 	end
 end})
@@ -78,22 +80,44 @@ local Players = game:GetService("Players")
 
 ----- Private Functions -----
 
+-- Function that shallow copys a table
+-- http://lua-users.org/wiki/CopyTable
+local function clone(tbl)
+	local t = {}
+	
+	for key, value in pairs(tbl) do
+		if typeof(value) == "table" then
+			t[key] = clone(value)
+		else
+			t[key] = value
+		end
+	end
+
+	return t
+end
+
 --[[
 	Description:
 		Function that compares the profile with DataVersion and updates it accordingly
 			if the profile is outdated
 ]]
 local function CheckIfProfileNeedsUpdate(profile)
+	--if G.DEBUG then
+	--	--Add in new data
+	--	for dataName, defaultData in pairs(ProfileTemplate) do
+	--		profile.Data[dataName] = defaultData
+	--	end
+	--elseif not profile:GetMetaTag("DataVersion") then
 	if not profile:GetMetaTag("DataVersion") then
 		-- First time setting up profile
 		profile:SetMetaTag("DataVersion", DataVersion)
-		print("New Player's Profile has been setup with DataVersion: " .. profile:GetMetaTag("DataVersion"))
+		--print("New Player's Profile has been setup with DataVersion: " .. profile:GetMetaTag("DataVersion"))
 	elseif profile:GetMetaTag("DataVersion") ~= DataVersion then
 		--Remove unused/old data
 		for dataName,_ in pairs(profile.Data) do
 			if ProfileTemplate[dataName] == nil then
 				profile.Data[dataName] = nil
-				print("Removed " .. dataName)
+				--print("Removed " .. dataName)
 			end
 		end
 		--Add in new data
@@ -102,9 +126,30 @@ local function CheckIfProfileNeedsUpdate(profile)
 				profile.Data[dataName] = defaultData
 			end
 		end
-
+		
 		profile:SetMetaTag("DataVersion", DataVersion)
-		print("Profile has been updated to new DataVersion: " .. profile:GetMetaTag("DataVersion"))
+		--print("Profile has been updated to new DataVersion: " .. profile:GetMetaTag("DataVersion"))
+	end
+end
+
+
+--[[
+	Description:
+		Function that checks if the given player has a Premium Membership.
+		Rewards player if they haven't been already.
+]]
+local function CheckIfPremium(plr, profile)
+	if plr.MembershipType == Enum.MembershipType.Premium then
+		local data = profile.Data
+		if data.HasReceivedPremiumBenefits == false then
+			for _,mod in pairs(DataModules) do
+				if mod["_HandoutPremium"] then
+					mod._HandoutPremium(plr, profile)
+				end
+			end
+			
+			data.HasReceivedPremiumBenefits = true
+		end
 	end
 end
 
@@ -113,7 +158,6 @@ end
 	WARNING:
 		ProfileService functionality that doesn't have to do with 'profile.Data' should
 			should be handled here.
-
 		You will still have access to the entire Profile in DataModules functions.
 ]]
 
@@ -126,10 +170,22 @@ end
 		Table of player's profile data
 ]]
 function MasterData:GetProfileData(plr)
-	local profile = Profiles[plr]
-
+	local retries = 30
+	while retries > 0 and not Profiles[plr] do
+		retries = retries - 1
+		wait()
+	end
+	
+	if not Profiles[plr] then
+		warn("Profile could not be found")
+		return {}
+	end
+	
+	local profile = Profiles[plr].Profile
+	local mockProfile = Profiles[plr].Mock
+	
 	if profile then
-		return profile.Data
+		return profile.Data, mockProfile.Data
 	end
 end
 
@@ -147,17 +203,29 @@ function MasterData:GetDefaultData()
 			Place here any data you want saved that wont be set up
 				through the DataModules.
 		]]
+		
+		["HasReceivedPremiumBenefits"] = false,
 	}
-
+	
+	local tempData = {
+		
+	}
+	
 	for _,mod in pairs(DataModules) do -- Search through each DataModule
 		if mod["_GetDefaultData"] then
 			for _dataName, _data in pairs(mod:_GetDefaultData()) do -- Loop through the table for all name,default pairs
 				defaultData[_dataName] = _data
 			end
 		end
+		
+		if mod["_GetTempData"] then
+			for _dataName, _data in pairs(mod:_GetTempData()) do
+				tempData[_dataName] = _data
+			end
+		end
 	end
-
-	return defaultData
+	
+	return defaultData, tempData
 end
 
 --[[
@@ -170,20 +238,66 @@ function MasterData:OnPlayerAdded(plr)
 		"Player_" .. plr.UserId,
 		"ForceLoad"
 	)
-
+	
+	local mockProfile = PlayerMockProfileStore.Mock:LoadProfileAsync(
+		"Player_" .. plr.UserId, 
+		"ForceLoad"
+	)
+	
 	if profile ~= nil then
 		profile:ListenToRelease(function() -- Setup a Release listener for when the player's Profile is released
 			Profiles[plr] = nil
-
+			
 			plr:Kick() -- Kick the player to prevent any data loss
 		end)
-
+		
 		if plr:IsDescendantOf(Players) == true then -- Check if the player is a descendant of Players
-			Profiles[plr] = profile
-
-			CheckIfProfileNeedsUpdate(profile) -- Check if the player's profile needs to be updated
+			local _Data = setmetatable({}, {
+				__index = function(t, key)
+					if profile.Data[key] then
+						return profile.Data[key]
+					elseif mockProfile.Data[key] then
+						return mockProfile.Data[key]
+					end
+				end,
+				__newindex = function(t, key, val)
+					if typeof(val) == "table" then
+						val = clone(val)
+					end
+					
+					if profile.Data[key] then
+						profile.Data[key] = val
+					elseif mockProfile.Data[key] then
+						mockProfile.Data[key] = val
+					end
+				end
+			})
+			
+			local profileMT = setmetatable({Profile = profile, Mock = mockProfile}, {
+				__index = function(t, key)
+					if key == "Data" then
+						return _Data
+					elseif profile[key] then
+						return profile[key]
+					end
+				end,
+				__newindex = function(t, key, val)
+					if _Data[key] then
+						_Data[key] = val
+					end
+				end
+			})
+			
+			Profiles[plr] = profileMT
+			
+			CheckIfProfileNeedsUpdate(profileMT.Profile) -- Check if the player's profile needs to be updated
+			
+			CheckIfPremium(plr, profileMT.Profile) -- Check if the player is premium and has received rewards
 		else
 			profile:Release() -- If the player left, release it's profile
+			PlayerProfileStore.Mock:WipeProfile("Player_" .. plr.UserId)
+			
+			Profiles[plr] = nil
 		end
 	else
 		plr:Kick()
@@ -195,10 +309,13 @@ end
 		Function called when a player is being removed from the game
 ]]
 function MasterData:OnPlayerRemoving(plr)
-	local profile = Profiles[plr]
-
+	local profile = Profiles[plr].Profile
+	
 	if profile ~= nil then -- If the player's profile exists in this server
 		profile:Release() -- Release it
+		PlayerProfileStore.Mock:WipeProfile("Player_" .. plr.UserId) -- Release mock profile to prevent memory leaks
+		
+		Profiles[plr] = nil
 	end
 end
 
@@ -206,7 +323,6 @@ end
 --[[
 	Description:
 		Connections are used to recieve messages from the client and do something with it.
-
 		I typically denote RemoteFunctions with an Fn at the end, and
 			RemoteEvents with an Ev at the end so I know what I'm
 			working with.
@@ -219,12 +335,19 @@ end
 	Returns:
 		Table of player's Profile data
 ]]
-Remotes.GetAllPlayerDataFn.OnServerInvoke = function(plr)
-	local profile = Profiles[plr]
-
-	if profile then
-		return profile.Data
+Remotes:WaitForChild("GetAllPlayerDataFn").OnServerInvoke = function(plr)
+	local profileData, mockData = MasterData:GetProfileData(plr)
+	local tbl = {}
+	
+	for i,v in pairs(profileData) do
+		tbl[i] = v
 	end
+	
+	for i,v in pairs(mockData) do
+		tbl[i] = v
+	end
+	
+	return tbl
 end
 
 ----- Initialize -----
@@ -233,10 +356,14 @@ end
 	We initialize this here so MasterData can get all setup before calling
 	MasterData:GetDefaultData()
 ]] 
-ProfileTemplate = MasterData:GetDefaultData()
+ProfileTemplate, ProfileMockTemplate = MasterData:GetDefaultData()
 PlayerProfileStore = ProfileService.GetProfileStore(
 	"PlayerData",
 	ProfileTemplate
+)
+PlayerMockProfileStore = ProfileService.GetProfileStore(
+	"PlayerMockData",
+	ProfileMockTemplate
 )
 
 return MasterData
