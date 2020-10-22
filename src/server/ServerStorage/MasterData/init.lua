@@ -132,27 +132,6 @@ local function CheckIfProfileNeedsUpdate(profile)
 	end
 end
 
-
---[[
-	Description:
-		Function that checks if the given player has a Premium Membership.
-		Rewards player if they haven't been already.
-]]
-local function CheckIfPremium(plr, profile)
-	if plr.MembershipType == Enum.MembershipType.Premium then
-		local data = profile.Data
-		if data.HasReceivedPremiumBenefits == false then
-			for _,mod in pairs(DataModules) do
-				if mod["_HandoutPremium"] then
-					mod._HandoutPremium(plr, profile)
-				end
-			end
-			
-			data.HasReceivedPremiumBenefits = true
-		end
-	end
-end
-
 ----- Public Functions -----
 --[[
 	WARNING:
@@ -203,8 +182,6 @@ function MasterData:GetDefaultData()
 			Place here any data you want saved that wont be set up
 				through the DataModules.
 		]]
-		
-		["HasReceivedPremiumBenefits"] = false,
 	}
 	
 	local tempData = {
@@ -291,8 +268,6 @@ function MasterData:OnPlayerAdded(plr)
 			Profiles[plr] = profileMT
 			
 			CheckIfProfileNeedsUpdate(profileMT.Profile) -- Check if the player's profile needs to be updated
-			
-			CheckIfPremium(plr, profileMT.Profile) -- Check if the player is premium and has received rewards
 		else
 			profile:Release() -- If the player left, release it's profile
 			PlayerProfileStore.Mock:WipeProfile("Player_" .. plr.UserId)
