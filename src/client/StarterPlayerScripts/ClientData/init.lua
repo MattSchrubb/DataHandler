@@ -4,15 +4,14 @@ local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
 
 ----- Loaded Modules -----
 
-local Remotes = require(game.ReplicatedStorage:WaitForChild("Remotes"))
-local HelperFns = require(game.ReplicatedStorage:WaitForChild("HelperFns"))
+local Remotes = game.ReplicatedStorage:WaitForChild("RemoteMessages")
 local Variable = require(script:WaitForChild("Variable"))
 
 ----- Private Variables -----
 
 local ACCESS_KEY = "SomeRandomKeyUsedForObjectAccess" -- Used to access the Variable Object instead of the Value
-local getAllPlayerDataFn = Remotes.GetAllPlayerDataFn
-local updatePlayerDataEv = Remotes.UpdatePlayerDataEv
+local getAllPlayerDataFn = Remotes:WaitForChild("GetAllPlayerDataFn")
+local updatePlayerDataEv = Remotes:WaitForChild("UpdatePlayerDataEv")
 
 ----- Public Variables -----
 
@@ -34,7 +33,7 @@ ClientData.__index = ClientData
 ]]
 local function _CreateVariable(defaultData, _debug)
 	if _debug and G.DEBUG then
-		print("Variable created: " .. _debug)
+		print("Variable created: " .. _debug .. ", " .. typeof(defaultData))
 	end
 	return Variable.new(defaultData)
 end
@@ -53,8 +52,11 @@ end
 function ClientData:_GetVariableObject(variableName, defaultData)
 	if self[ACCESS_KEY .. variableName] ~= nil then
 		return self[ACCESS_KEY .. variableName]
-	else
+	elseif defaultData ~= nil then
 		self[variableName] = _CreateVariable(defaultData, "_GetVariableObject " .. variableName)
+		return self[ACCESS_KEY .. variableName]
+	else -- For OnUpdate creating Variable
+		self[variableName] = nil
 		return self[ACCESS_KEY .. variableName]
 	end
 end
@@ -70,11 +72,11 @@ end
 ]]
 function ClientData:_Update(dataName, newData)
 	local var = self:_GetVariableObject(dataName, newData)
-
+	
 	local oldVal = var.Value -- Store the old value for use in the ClientData callbacks
 	var:_Update(newData) -- Updates the Variable, and fires its own callbacks
 	local newVal = var.Value -- Get the new value for use in the ClientData callbacks
-
+	
 	for _,callback in pairs(self._callbacks) do
 		callback(dataName, oldVal, newVal) -- Fire each callback function set up for ClientData
 	end
@@ -103,6 +105,8 @@ function ClientData:OnUpdate(variableName, func)
 		local var = self:_GetVariableObject(variableName)
 		if var ~= nil then
 			var:OnUpdate(func)
+		else
+			warn("Cannot add OnUpdate callback to a non-existent variable!")
 		end
 	end
 end
@@ -111,12 +115,11 @@ end
 
 local function initialize()
 	local self = {}
-
+	
 	----- Private Variables -----
 	--[[
 		Description:
 			A table used to store data the server will be manipulating
-
 			(Read-Only) for the Client
 			
 			Server is the only entity with access to change data here
@@ -127,24 +130,21 @@ local function initialize()
 		WARNING!!!
 		DO NOT PUT ANYTHING HERE!!!
 		THIS IS JUST AN EXAMPLE OF HOW IT WILL LOOK!!
-
 		Coins = _CreateVariable(_allData.Coins),
 		Items = _CreateVariable(_allData.Items),
 	]]
 	}
+	
 	-- Setup all data that will be stored in _privateVariableList
 	for dataName, data in pairs(getAllPlayerDataFn:InvokeServer()) do
 		_privateVariableList[dataName] = _CreateVariable(data, "getAllPlayerData " .. dataName) -- Remove 2nd parameter if you don't want to debug
 	end
-
-
+	
 	--[[
 		Description:
 			Similar to _privateVariableList, except this data is created and accessed
 				by the Client only
-
 			(Read-Write) for the Client
-
 			Doesn't need to be set up right away, but in some cases having the index 
 				at startup is needed
 	]]
@@ -153,39 +153,34 @@ local function initialize()
 		WARNING!!!
 			Make sure the keys are different from _privateVariableList keys!!
 			Check MasterData:GetDefaultData() for more information
-
 		You can put whatever you want here at any
 			time during the Client's session.
-
 		These will never be saved and are usefull only for this session.
-
 		Example Data:
 		UIOpen = _CreateVariable({}),
-		KillStreak = _CreateVariable({})
+		KillStreak = _CreateVariable(0)
 	]]
 	}
-
-
+	
+	
 	-- Table of callback functions fired when the ClientData table is updated
 	self._callbacks = {}
-
+	
 	----- Public Variables -----
-
-
-
+	
+	
+	
 	----- Connections -----
 	--[[
 		Description:
 			Connections is mainly used to listen to messages sent by the Server.
-
 			As a default, we include an updatePlayerDataEv to check when the
 				Server wants to update/add _privateVariableList Variables.
-
 			I usually set them up as local variables in the Private Variables
 				section at the very top. But this is not neccessary, you can
 				just use 'Remotes.EventName.OnClientEvent' instead.
 	]]
-
+	
 	-- Remote event fired when the Server is updating/adding a _privateVariableList Variable
 	updatePlayerDataEv.OnClientEvent:Connect(function(dataName, newData)
 		if _privateVariableList[dataName] == nil then -- Check if it doesn't exist and create a new Variable Object
@@ -193,14 +188,13 @@ local function initialize()
 		end
 		self:_Update(dataName, newData)
 	end)
-
+	
 	----- Metamethods -----
-
+	
 	--[[
 		Description:
 			When 'self' is indexed by anything, it first checks to see if
 				the index is part of the ClientData table.
-
 			This is useful so that you can call ClientData functions while
 				still giving functionality to Variables inside the
 				_privateVariableList and _publicVariableList by not having
@@ -210,7 +204,7 @@ local function initialize()
 		if string.match(index, ACCESS_KEY) then -- Check if trying to access the Variable Object
 			
 			index = string.gsub(index, ACCESS_KEY, "")
-
+			
 			if _privateVariableList[index] ~= nil then
 				return _privateVariableList[index]
 			elseif _publicVariableList[index] ~= nil then
@@ -222,7 +216,7 @@ local function initialize()
 			return _publicVariableList[index].Value
 		end
 	end})
-
+	
 	--[[
 		Description:
 			When attempting to setup or change a Variable's Value, this function will be called.
@@ -241,7 +235,7 @@ local function initialize()
 			_publicVariableList[index] = _CreateVariable(newValue, "_publicVariableList " .. index) -- Creates a new public Variable
 		end
 	end
-
+	
 	return setmetatable(self, self)
 end
 
