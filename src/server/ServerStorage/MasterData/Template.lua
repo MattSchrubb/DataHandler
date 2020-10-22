@@ -4,18 +4,20 @@
 
 ----- Loaded Modules -----
 
-local Remotes = require(game.ReplicatedStorage:WaitForChild("Remotes"))
-local HelperFns = require(game.ReplicatedStorage:WaitForChild("HelperFns"))
+local Remotes = game.ReplicatedStorage:WaitForChild("RemoteMessages")
 
 ----- Private Variables -----
 
 local defaultData = {
-	["Template"] = 5
+	["Template"] = 5,
+}
+-- WARNING MAKE SURE THE KEYS ARE DIFFERENT FROM ANY OTHER DEFAULT OR TEMP DATA
+local tempData = {
+	["TempData"] = 10
 }
 
 --[[
 	OR if there are multiple parts to this data structure then
-
 	local defaultData = {
 		["Template Data Item 1"] = "Temp1"
 		["Template Data Item 2"] = "Temp2"
@@ -35,6 +37,16 @@ Template.__index = Template
 ]]
 function Template:_GetDefaultData()
 	return defaultData
+end
+
+
+--[[
+	WARNING: THE DATA PASSED FROM HERE MUST NOT HAVE THE SAME NAME AS ANY OTHER DEFAULT OR TEMP DATA
+	Description:
+		Function that returns the name and default data for each data type the won't be saved
+]]
+function Template:_GetTempData()
+	return tempData
 end
 
 --[[
