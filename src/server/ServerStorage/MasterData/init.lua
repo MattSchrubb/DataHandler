@@ -246,6 +246,9 @@ function MasterData:OnPlayerAdded(plr)
 						profile.Data[key] = val
 					elseif mockProfile.Data[key] then
 						mockProfile.Data[key] = val
+					else
+						warn("NO KEY FOUND WARNING: '" .. key .. "' not found in " .. plr.Name .. "'s Profile or MockProfile! Setting it up now!")
+						mockProfile.Data[key] = val
 					end
 				end
 			})
