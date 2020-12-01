@@ -5,3 +5,8 @@
 /*.rbxlx.lock
 /*.rbxl.lock
 *.rbxl
+*.rbxlx
+
+# Everything else
+*.vscode
+/DataHandler.code-workspace

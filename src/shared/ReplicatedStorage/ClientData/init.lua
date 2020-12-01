@@ -1,15 +1,13 @@
------ GLOBALS -----
-
-local G = require(game.ReplicatedFirst:WaitForChild("GLOBALS"))
-
 ----- Loaded Modules -----
 
-local Remotes = game.ReplicatedStorage:WaitForChild("RemoteMessages")
 local Variable = require(script:WaitForChild("Variable"))
 
 ----- Private Variables -----
 
-local ACCESS_KEY = "SomeRandomKeyUsedForObjectAccess" -- Used to access the Variable Object instead of the Value
+local Remotes = game.ReplicatedStorage:WaitForChild("RemoteMessages")
+
+local ACCESS_KEY = "SomeRandomKeyUsedForObjectAccess"
+
 local getAllPlayerDataFn = Remotes:WaitForChild("GetAllPlayerDataFn")
 local updatePlayerDataEv = Remotes:WaitForChild("UpdatePlayerDataEv")
 
@@ -32,12 +30,11 @@ ClientData.__index = ClientData
 		Variable Object
 ]]
 local function _CreateVariable(defaultData, _debug)
-	if _debug and G.DEBUG then
+	if _debug then
 		print("Variable created: " .. _debug .. ", " .. typeof(defaultData))
 	end
 	return Variable.new(defaultData)
 end
-
 
 --[[
 	Description:
@@ -61,7 +58,6 @@ function ClientData:_GetVariableObject(variableName, defaultData)
 	end
 end
 
-
 --[[
 	Description:
 		Function called when a Variable's Value is being updated.
@@ -78,7 +74,7 @@ function ClientData:_Update(dataName, newData)
 	local newVal = var.Value -- Get the new value for use in the ClientData callbacks
 	
 	for _,callback in pairs(self._callbacks) do
-		callback(dataName, oldVal, newVal) -- Fire each callback function set up for ClientData
+		coroutine.resume(coroutine.create(callback), dataName, newVal, oldVal) -- Fire each callback function set up for ClientData
 	end
 end
 
@@ -186,6 +182,7 @@ local function initialize()
 		if _privateVariableList[dataName] == nil then -- Check if it doesn't exist and create a new Variable Object
 			_privateVariableList[dataName] = _CreateVariable(newData, "_privateVariableList" .. dataName .. "")
 		end
+		while not self._Update do wait() end
 		self:_Update(dataName, newData)
 	end)
 	
@@ -228,7 +225,7 @@ local function initialize()
 	]]
 	self.__newindex = function(tbl, index, newValue)
 		if _privateVariableList[index] ~= nil then -- Check if the index is under the _privateVariableList
-			warn("Attempting to change a Read-Only variable within ClientData!")
+			error("Attempting to edit a Read-Only variable within ClientData!\n" .. index .. " can only be edited by the server!")
 		elseif _publicVariableList[index] ~= nil then
 			self:_Update(index, newValue)
 		else

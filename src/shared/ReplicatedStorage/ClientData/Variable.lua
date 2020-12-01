@@ -10,7 +10,7 @@ function Variable:_Update(data)
 	self.Value = data
 
 	for _,func in pairs(self._callbacks) do
-		func(self.Value, oldVal)
+		coroutine.wrap(func)(self.Value, oldVal)
 	end
 end
 
