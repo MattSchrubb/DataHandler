@@ -77,7 +77,7 @@ end
 		Function that checks if the given profile's Template data is
 			equal to otherData.
 ]]
-function Template:TemplateFunc(plr, profile, otherData)
+function Template:TemplateCompare(plr, profile, otherData)
 	-- Get the profile's Data
 	local data = profile.Data
 	-- Compare the Template index's value to otherData
@@ -96,6 +96,16 @@ function Template:AddToTemplate(plr, profile, amt)
 	data.Template = data.Template + amt
 	-- Fire to the client that its "Template" value was changed
 	_Update(plr, "Template", data.Template)
+end
+
+--[[
+	Function that returns a palyer's Template value
+]]
+function Template:GetTemplate(plr, profile)
+	-- Get the profile's Data
+	local data = profile.Data
+	-- Return the data's Template value
+	return data.Template
 end
 
 --[[
@@ -122,10 +132,12 @@ function Template:ComparePlayers(plrs, profiles)
 end
 
 --[[
-	Function that generates a random number between startVal and endVal
+	Function that changes the value of TempData and updates it for all clients.
+		This allows new players to have the updated value as well.
 ]]
-function Template:GenerateNewNumber(min, max)
-	return math.random(min, max)
+function Template:ManipulateTempData(val)
+	tempData["TempData"] = val
+	_UpdateAll("TempData", tempData["TempData"])
 end
 
 ----- Initiate -----

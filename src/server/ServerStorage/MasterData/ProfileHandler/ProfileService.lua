@@ -1,14 +1,12 @@
 -- local Madwork = _G.Madwork
 --[[
 {Madwork}
-
 -[ProfileService]---------------------------------------
 	(STANDALONE VERSION)
 	DataStore profiles - universal session-locked savable table API
 	
 	Official documentation:
 		https://madstudioroblox.github.io/ProfileService/
-
 	DevForum discussion:
 		https://devforum.roblox.com/t/ProfileService/667805
 	
@@ -122,7 +120,6 @@
 		Profile:SetMetaTag(tag_name, value)
 		
 		Profile:Save() -- Call to quickly progress global update state or to speed up save validation processes (Does not yield)
-
 		
 	Methods [GlobalUpdates]:
 	
@@ -415,6 +412,12 @@ local function ReconcileTable(target, template)
 			elseif type(target[k]) == "table" and type(v) == "table" then
 				ReconcileTable(target[k], v)
 			end
+		end
+	end
+
+	for k,_ in pairs(target) do
+		if template[k] == nil then
+			target[k] = nil
 		end
 	end
 end

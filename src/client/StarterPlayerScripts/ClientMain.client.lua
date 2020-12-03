@@ -2,7 +2,7 @@
 	This is a test setup for handling ClientData
 ]]
 
-local ClientData = require(script.Parent:WaitForChild("ClientData"))
+local ClientData = require(game.ReplicatedStorage:WaitForChild("ClientData"))
 
 -- Clients can create their own variables any time you want them to
 ClientData:OnUpdate("TestVariable", function(newVal, oldVal)
