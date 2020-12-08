@@ -172,24 +172,14 @@ end
 		Table of player's Profile data
 ]]
 Remotes:WaitForChild("GetAllPlayerDataFn").OnServerInvoke = function(plr)
-	local success, profileData, mockData = ProfileHandler:GetProfileData(plr, true):await()
+	local success, data = ProfileHandler:GetProfileData(plr, true):await()
 
 	if success then
-		local tbl = {}
-		
-		for i,v in pairs(mockData) do
-			tbl[i] = v
-		end
-	
-		for i,v in pairs(profileData) do
-			tbl[i] = v
-		end
-		
-		return tbl
+		return data
 	else
 		warn("WARNING: Could not find Player '" .. plr.Name .. "'s Profile Data! Kicking them now.")
 		plr:Kick("Error loading your data. Please rejoin!!!")
-		return
+		error(data)
 	end
 end
 

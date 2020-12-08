@@ -57,7 +57,7 @@ function ProfileHandler:GetProfile(plr)
 	:timeout(30)
 end
 
-function ProfileHandler:GetProfileData(plr, _separated)
+function ProfileHandler:GetProfileData(plr, _forPlayer)
 	return Promise.new(function(resolve, reject, onCancel)
 		local canRetry = true
 
@@ -72,10 +72,21 @@ function ProfileHandler:GetProfileData(plr, _separated)
 		end
 		
 		if profile then
-			if _separated then
-				resolve(Profiles[plr].Profile.Data, Profiles[plr].Mock.Data)
+			if _forPlayer then
+				local data = {}
+		
+				for i,v in pairs(profile.Mock.Data) do
+					data[i] = v
+				end
+				
+				-- Profile goes second so that it overrides any duplicate keys that Mock has
+				for i,v in pairs(profile.Profile.Data) do
+					data[i] = v
+				end
+
+				resolve(data)
 			else
-				resolve(Profiles[plr].Data)
+				resolve(profile.Data)
 			end
 		end
 	end)
