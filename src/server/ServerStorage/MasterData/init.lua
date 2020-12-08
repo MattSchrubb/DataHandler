@@ -117,19 +117,8 @@ local MasterData = setmetatable({}, {
 
 ----- Public Functions -----
 
-function MasterData:OnUpdate(dataName, plr, callback)
-	if not _OnUpdateCallbacks[plr] then
-		_OnUpdateCallbacks[plr] = {}
-	end
-
-	local succ, data = ProfileHandler:GetProfileData(plr):await()
-	if succ and data[dataName] ~= nil then
-		if not _OnUpdateCallbacks[plr][dataName] then
-			_OnUpdateCallbacks[plr][dataName] = {}
-		end
-		
-		table.insert(_OnUpdateCallbacks[plr][dataName], callback)
-	end
+function MasterData:OnUpdate(plr, dataName, callback)
+	ProfileHandler:OnUpdate(plr, dataName, callback)
 end
 
 
@@ -141,12 +130,11 @@ end
 	Description:
 		Function called when a player is added to the game.
 		This function handles the setup of the players Profile.
+	Returns:
+		The palyer's profile
 ]]
 function MasterData:OnPlayerAdded(plr)
-	if not _OnUpdateCallbacks[plr] then
-		_OnUpdateCallbacks[plr] = {}
-	end
-	local success, profile = ProfileHandler:OnPlayerAdded(plr, _OnUpdateCallbacks[plr]):await()
+	local success, profile = ProfileHandler:OnPlayerAdded(plr):await()
 
 	if not success then
 		plr:Kick(profile)
@@ -161,7 +149,6 @@ end
 		Function called when a player is being removed from the game
 ]]
 function MasterData:OnPlayerRemoving(plr)
-	_OnUpdateCallbacks[plr] = nil
 	local success, err = ProfileHandler:OnPlayerRemoving(plr):await()
 	if not success then
 		error(err)
@@ -205,6 +192,10 @@ Remotes:WaitForChild("GetAllPlayerDataFn").OnServerInvoke = function(plr)
 		return
 	end
 end
+
+Remotes:WaitForChild("UpdateAllEv").Event:Connect(function(dataName, newData)
+	MasterData:_UpdateAll(game.Players:GetChildren(), dataName, newData)
+end)
 
 ----- Initialize -----
 

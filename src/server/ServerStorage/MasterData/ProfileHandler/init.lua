@@ -12,7 +12,7 @@ local PlayerMockProfileStore = ProfileService.GetProfileStore(
 	"PlayerMockData",
 	{}
 )
-
+local _OnUpdateCallbacks = {}
 
 local function clone(tbl)
 	local t = {}
@@ -94,7 +94,19 @@ function ProfileHandler:ResetData(plr)
 	end
 end
 
-function ProfileHandler:OnPlayerAdded(plr, _OnUpdateCallbacks)
+function ProfileHandler:OnUpdate(plr, dataName, callback)
+	if not _OnUpdateCallbacks[plr] then
+		_OnUpdateCallbacks[plr] = {}
+	end
+
+	if not _OnUpdateCallbacks[plr][dataName] then
+		_OnUpdateCallbacks[plr][dataName] = {}
+	end
+		
+	table.insert(_OnUpdateCallbacks[plr][dataName], callback)
+end
+
+function ProfileHandler:OnPlayerAdded(plr)
 	return Promise.new(function(resolve, reject)
 		local profile = PlayerProfileStore:LoadProfileAsync(
 			"Player_" .. plr.UserId,
@@ -126,7 +138,7 @@ function ProfileHandler:OnPlayerAdded(plr, _OnUpdateCallbacks)
 				plr:Kick("Data Profile was released. Preventing Data Loss!")
 			end)
 
-			--
+			-- Reconcile the profile's data with updated data
 			profile:Reconcile()
 			-- Grab the TempData that could have been changed before the player joined the game
 			for i,v in pairs(DataModulesHandler:GetTempData()) do
@@ -134,6 +146,10 @@ function ProfileHandler:OnPlayerAdded(plr, _OnUpdateCallbacks)
 			end
 
 			if plr:IsDescendantOf(game.Players) then
+				if not _OnUpdateCallbacks[plr] then
+					_OnUpdateCallbacks[plr] = {}
+				end
+
 				local _Data = setmetatable({}, {
 					__index = function(_, key)
 						if profile.Data[key] ~= nil then
@@ -157,8 +173,8 @@ function ProfileHandler:OnPlayerAdded(plr, _OnUpdateCallbacks)
 							local oldVal = profile.Data[key]
 							profile.Data[key] = val
 
-							if _OnUpdateCallbacks[key] then
-								for _,func in pairs(_OnUpdateCallbacks[key]) do
+							if _OnUpdateCallbacks[plr][key] then
+								for _,func in pairs(_OnUpdateCallbacks[plr][key]) do
 									coroutine.resume(coroutine.create(func), plr, Profiles[plr], val, oldVal)
 								end
 							end
@@ -166,8 +182,8 @@ function ProfileHandler:OnPlayerAdded(plr, _OnUpdateCallbacks)
 							local oldVal = mockProfile.Data[key]
 							mockProfile.Data[key] = val
 							
-							if _OnUpdateCallbacks[key] then
-								for _,func in pairs(_OnUpdateCallbacks[key]) do
+							if _OnUpdateCallbacks[plr][key] then
+								for _,func in pairs(_OnUpdateCallbacks[plr][key]) do
 									coroutine.resume(coroutine.create(func), plr, Profiles[plr], val, oldVal)
 								end
 							end
@@ -176,8 +192,8 @@ function ProfileHandler:OnPlayerAdded(plr, _OnUpdateCallbacks)
 							local oldVal = mockProfile.Data[key]
 							mockProfile.Data[key] = val
 
-							if _OnUpdateCallbacks[key] then
-								for _,func in pairs(_OnUpdateCallbacks[key]) do
+							if _OnUpdateCallbacks[plr][key] then
+								for _,func in pairs(_OnUpdateCallbacks[plr][key]) do
 									coroutine.resume(coroutine.create(func), plr, Profiles[plr], val, oldVal)
 								end
 							end
@@ -217,6 +233,10 @@ end
 
 function ProfileHandler:OnPlayerRemoving(plr)
 	return Promise.new(function(resolve, reject)
+		if _OnUpdateCallbacks[plr] then
+			_OnUpdateCallbacks[plr] = nil
+		end
+		
 		if Profiles[plr] then
 			local profile = Profiles[plr].Profile
 			local mock = Profiles[plr].Mock

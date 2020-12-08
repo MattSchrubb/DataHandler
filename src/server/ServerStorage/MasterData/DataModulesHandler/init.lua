@@ -13,16 +13,25 @@
 local DataModules = {}
 local _cachedFunctions = {}
 
-for _,mod in pairs(script:GetChildren()) do
+for _,mod in pairs(script.Parent:WaitForChild("DataModules"):GetChildren()) do
 	DataModules[mod.Name] = require(mod)
 	for index,var in pairs(DataModules[mod.Name]) do
-		if type(var) == "function" and index ~= "_GetDefaultData" and index ~= "_GetTempData" then
-			_cachedFunctions[index] = {modName = mod.Name, mod = DataModules[mod.Name], func = var}
+		if type(var) == "function" then
+			if index ~= "_GetDefaultData" and index ~= "_GetTempData" and index ~= "_UpdateAll" then
+				_cachedFunctions[index] = {modName = mod.Name, mod = DataModules[mod.Name], func = var}
+			else
+				warn("MasterData: Attempting to override the reserved function '" .. index .. "' in '" .. mod.Name)
+			end
 		end
 	end
 end
 
-
+_cachedFunctions["_UpdateAll"] = function(players, profiles, dataName, newData)
+	for _,profile in pairs(profiles) do
+		local data = profile.Data
+		data[dataName] = newData
+	end
+end
 
 
 
@@ -48,6 +57,9 @@ function DataModulesHandler:GetDefaultData()
 	for _,mod in pairs(DataModules) do
 		if type(mod) ~= "function" and mod["_GetDefaultData"] then
 			for _dataName,_data in pairs(mod:_GetDefaultData()) do
+				assert(type(_dataName) == "string" or type(_dataName) == "number", "INVALID_KEY_TYPE_ERROR: " .. tostring(_dataName), type(_dataName) .. ". Key must be a 'string' or 'number' value!")
+				assert(type(_data) ~= "userdata", "Attempting to store a 'userdata' value in the Player's Profile: " .. _dataName, typeof(_data) .. ". Use tempData instead.")
+				assert(type(_data) ~= "function", "Attempting to store a 'function' value in the Player's Profile: " .. _dataName, type(_data))
 				DefaultData[_dataName] = _data
 			end
 		end
