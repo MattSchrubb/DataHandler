@@ -5,22 +5,26 @@
 
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
-      "$path": "src/shared/ReplicatedStorage"
+      "$path": "src/shared/ReplicatedStorage",
+      "$ignoreUnknownInstances": true
     },
 
     "ReplicatedFirst":{
       "$className": "ReplicatedFirst",
-      "$path": "src/shared/ReplicatedFirst"
+      "$path": "src/shared/ReplicatedFirst",
+      "$ignoreUnknownInstances": true
     },
 
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "$path": "src/server/ServerScriptService"
+      "$path": "src/server/ServerScriptService",
+      "$ignoreUnknownInstances": true
     },
 
     "ServerStorage":{
       "$className": "ServerStorage",
-      "$path": "src/server/ServerStorage"
+      "$path": "src/server/ServerStorage",
+      "$ignoreUnknownInstances": true
     },
 
     "StarterPlayer": {
@@ -28,12 +32,14 @@
 
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "$path": "src/client/StarterPlayerScripts"
+        "$path": "src/client/StarterPlayerScripts",
+        "$ignoreUnknownInstances": true
 	  },
 	  
 	  "StarterCharacterScripts": {
 		  "$className": "StarterCharacterScripts",
-		  "$path": "src/client/StarterCharacterScripts"
+      "$path": "src/client/StarterCharacterScripts",
+      "$ignoreUnknownInstances": true
 	  }
     },
 
@@ -42,6 +48,7 @@
       "$properties": {
         "FilteringEnabled": true
       },
+      "$ignoreUnknownInstances": true,
       "Baseplate": {
         "$className": "Part",
         "$properties": {
