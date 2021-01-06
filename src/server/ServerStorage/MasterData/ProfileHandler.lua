@@ -11,19 +11,17 @@ local ProfileTemplate = {
 }
 
 for _,mod in pairs(script.Parent:WaitForChild("DataModules"):GetChildren()) do
-	if mod:IsA("ModuleScript") then
-		mod = require(mod)
+	mod = require(mod)
 	
-		if mod["_GetDefaultData"] then
-			local replicatedData, privateData = mod._GetDefaultData()
-			
-			for dataName, defaultValue in pairs(replicatedData) do
-				ProfileTemplate["ReplicatedData"][dataName] = defaultValue
-			end
-			
-			for dataName, defaultValue in pairs(privateData) do
-				ProfileTemplate["PrivateData"][dataName] = defaultValue
-			end
+	if mod["_GetDefaultData"] then
+		local replicatedData, privateData = mod._GetDefaultData()
+		
+		for dataName, defaultValue in pairs(replicatedData) do
+			ProfileTemplate["ReplicatedData"][dataName] = defaultValue
+		end
+		
+		for dataName, defaultValue in pairs(privateData) do
+			ProfileTemplate["PrivateData"][dataName] = defaultValue
 		end
 	end
 end
