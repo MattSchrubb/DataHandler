@@ -1,9 +1,3 @@
--- !!!!! README !!!!! --
--- PLACE THIS UNDER THE DATA MODULES FOLDER FOR IT TO WORK --
-
-
-
-
 ----- Loaded Modules -----
 
 
