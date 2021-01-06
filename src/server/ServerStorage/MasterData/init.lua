@@ -3,10 +3,12 @@ local DataModules = script:WaitForChild("DataModules")
 
 local cachedFunctions = {}
 for _,mod in pairs(DataModules:GetChildren()) do
-	for name,func in pairs(require(mod)) do
-		if type(func) == "function" then
-			if name ~= "_GetDefaultData" then
-				cachedFunctions[name] = func
+	if mod:IsA("ModuleScript") then
+		for name,func in pairs(require(mod)) do
+			if type(func) == "function" then
+				if name ~= "_GetDefaultData" then
+					cachedFunctions[name] = func
+				end
 			end
 		end
 	end
