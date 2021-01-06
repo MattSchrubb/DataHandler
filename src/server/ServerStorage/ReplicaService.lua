@@ -254,7 +254,7 @@ local ReplicaService = {
 
 ----- Loaded Services & Modules -----
 
-local RateLimiter = require(Madwork.GetModule("Madwork", "RateLimiter"))
+local RateLimiter = require(game.ServerStorage:WaitForChild("RateLimiter"))
 local MadworkMaid = require(Madwork.GetShared("Madwork", "MadworkMaid"))
 
 ----- Private Variables -----

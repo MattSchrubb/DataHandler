@@ -1,7 +1,7 @@
 ----- Loaded Modules -----
 
-local ReplicaService = require(game.ServerScriptService:WaitForChild("ReplicaService"))
-local ProfileService = require(game.ServerScriptService:WaitForChild("ProfileService"))
+local ReplicaService = require(game.ServerStorage:WaitForChild("ReplicaService"))
+local ProfileService = require(game.ServerStorage:WaitForChild("ProfileService"))
 
 ----- Private Variables -----
 
