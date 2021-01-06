@@ -104,6 +104,6 @@ end
 
 ----- Initialize -----
 
---requestData()
+requestData()
 
 return ClientData
