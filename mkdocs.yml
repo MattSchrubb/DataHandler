@@ -1,0 +1,26 @@
+site_name: DataHandler
+site_url: https://mattschrubb.github.io/DataHandler
+repo_name: MadStudioRoblox/ReplicaService
+repo_url: https://github.com/MattSchrubb/DataHandler
+
+theme:
+  icon:
+    logo: material/lan-connect
+    repo: fontawesome/brands/git-alt
+  name: material
+  favicon: images/favicon.png
+  palette:
+    primary: "indigo"
+    accent: "indigo"
+
+nav:
+  - Home: index.md
+  - Tutorial:
+    - Setting up: tutorial/settingup.md
+    - Basic Usage: tutorial/basic_usage.md
+  - API: api.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
