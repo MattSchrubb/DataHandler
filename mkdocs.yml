@@ -10,7 +10,7 @@ theme:
     accent: "indigo"
 
 nav:
-  - API: api.md
+  - API: README.md
 
 markdown_extensions:
   - admonition
